@@ -1,6 +1,8 @@
 from telethon import TelegramClient, events, Button
 from deep_translator import GoogleTranslator
+from flask import Flask
 import re
+import os
 from config import *
 
 bot = TelegramClient('bot_session', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
@@ -63,4 +65,15 @@ async def handler(event):
         print(f"[X] Xatolik: {e}")
 
 print("Bot ishga tushdi...")
+
 bot.run_until_disconnected()
+# ---------FLASK APP --------------#
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "Bot running"
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
