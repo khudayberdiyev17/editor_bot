@@ -1,7 +1,8 @@
+# new.py
 from telethon import TelegramClient, events, Button
 from deep_translator import GoogleTranslator
 from flask import Flask
-import threading, asyncio
+import asyncio
 import re
 import os
 from config import *
@@ -29,51 +30,32 @@ def translate_text(original: str) -> str:
     return "\n\n".join(translations)
 
 def split_message(text: str, limit=4000):
-    """Uzun matnlarni telegram limiti bo‘yicha bo‘lib yuborish"""
     return [text[i:i+limit] for i in range(0, len(text), limit)]
 
 @bot.on(events.NewMessage(chats=CHANNEL_ID))
 async def handler(event):
     try:
         message = event.message
-
-        # Bot o‘zi yuborgan bo‘lsa – ignore
         if message.out:
             return
-
         original_text = message.message or ""
         translations = translate_text(original_text)
         final_text = f"{translations}\n\n👉 {KANAL_LINK}"
-
         buttons = [[Button.url("📢 Do‘stlarga ulashish", KANAL_LINK)]]
-
-        # Eski postni o‘chirib tashlash
         await bot.delete_messages(CHANNEL_ID, message.id)
-
-        # Media bo‘lsa, faqat caption sifatida kanal linkini yuborish (tarjimalar caption uchun uzun bo‘lishi mumkin emas)
         if message.media and message.media.__class__.__name__ != "MessageMediaWebPage":
             await bot.send_file(CHANNEL_ID, file=message.media, caption=f"👉 {KANAL_LINK}", buttons=buttons)
-            # Tarjimalarni alohida yuborish
             for part in split_message(translations):
                 await bot.send_message(CHANNEL_ID, part, buttons=buttons)
         else:
             for part in split_message(final_text):
                 await bot.send_message(CHANNEL_ID, part, buttons=buttons)
-
         print(f"[OK] Post #{message.id} qayta joylandi")
-
     except Exception as e:
         print(f"[X] Xatolik: {e}")
 
 print("Bot ishga tushdi...")
-def run_bot():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(bot.run_until_disconnected())
-    
-threading.Thread(target=run_bot).start()
 
-# bot.run_until_disconnected()
 # ---------FLASK APP --------------#
 app = Flask(__name__)
 
@@ -81,8 +63,16 @@ app = Flask(__name__)
 def home():
     return "Bot running"
 
+# ---------Asyncio loop bilan ishga tushirish ---------#
+async def main():
+    # Botni ishga tushirish
+    await bot.run_until_disconnected()
+
 if __name__ == "__main__":
+    # Flask serverni alohida thread-da ishga tushirish
+    import threading
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=port)).start()
 
-
+    # Botni asyncio loop ichida ishga tushirish
+    asyncio.run(main())
