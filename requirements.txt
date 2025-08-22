@@ -3,4 +3,3 @@ python-dotenv==1.0.1
 Telethon
 deep_translator==1.11.4
 Flask
-threading
