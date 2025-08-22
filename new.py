@@ -1,7 +1,7 @@
 from telethon import TelegramClient, events, Button
 from deep_translator import GoogleTranslator
 from flask import Flask
-import threading
+import threading, asyncio
 import re
 import os
 from config import *
@@ -67,7 +67,9 @@ async def handler(event):
 
 print("Bot ishga tushdi...")
 def run_bot():
-    bot.run_until_disconnected()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(bot.run_until_disconnected())
     
 threading.Thread(target=run_bot).start()
 
@@ -82,4 +84,5 @@ def home():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
+
 
